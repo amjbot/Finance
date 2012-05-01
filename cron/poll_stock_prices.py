@@ -111,7 +111,8 @@ while len(all_securities)>0:
     url = "http://finance.yahoo.com/d/quotes.csv?f="\
       + "".join(k for (k,v) in fields)\
       + "&s=" + "+".join(securities)
-    outdir = now.strftime('securities_db/%Y/%m/%d/%H/%M')
+    basedir = os.path.abspath(os.path.dirname(__file__))+"/securities_db"
+    outdir = now.strftime(basedir+'/%Y/%m/%d/%H/%M')
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
@@ -121,7 +122,7 @@ while len(all_securities)>0:
         print response.read()
         print
         break
-    outfile = open(now.strftime('securities_db/%Y/%m/%d/%H/%M/securities_%Y%m%d_%H%M%S.part'+str(i)+'.csv'),'w')
+    outfile = open(now.strftime(basedir+'/%Y/%m/%d/%H/%M/securities_%Y%m%d_%H%M%S.part'+str(i)+'.csv'),'w')
     for line in urllib.urlopen(url).readlines():
         if line.strip()=="": continue
         quote = dict(zip([k for (k,v) in fields], line.split(',')))
