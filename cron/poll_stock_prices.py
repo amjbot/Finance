@@ -115,6 +115,7 @@ while len(all_securities)>0:
     outdir = now.strftime(basedir+'/%Y/%m/%d/%H/%M')
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    file(basedir+"/polling.log","w").write("%s Polled yahoo for stock prices.\n" % now)
 
     response = urllib.urlopen(url)
     if response.getcode()!=200:
