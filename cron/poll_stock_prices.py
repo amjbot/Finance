@@ -7,15 +7,22 @@ import os
 import os.path
 import csv
 
+#   Removed because these fields contain commas (doh!)
+#   ('a5', 'Ask Size'), #WARNING THIS CONTAINS COMMAS FOR 1,000,000 markers
+#   ('b6', 'Bid Size'),
+#   ('k3', 'Last Trade Size'),
+#   ('f6', 'Float Shares'),
+
+#   Removed because this wastes too much space
+#   ('t6', 'Trade Links'),
+
 fields = [
    ('a', 'Ask'),
    ('a2', 'Average Daily Volume'),
-   ('a5', 'Ask Size'),
    ('b', 'Bid'),
    ('b2', 'Ask (Real-time)'),
    ('b3', 'Bid (Real-time)'),
    ('b4', 'Book Value'),
-   ('b6', 'Bid Size'),
    ('c', 'Change & Percent Change'),
    ('c1', 'Change'),
    ('c3', 'Commission'),
@@ -29,7 +36,6 @@ fields = [
    ('e7', 'EPS Estimate Current Year'),
    ('e8', 'EPS Estimate Next Year'),
    ('e9', 'EPS Estimate Next Quarter'),
-   ('f6', 'Float Shares'),
    ('g', "Day's Low"),
    ('h', "Day's High"),
    ('j', '52-week Low'),
@@ -48,7 +54,6 @@ fields = [
    ('j6', 'Percent Change From 52-week Low'),
    ('k1', 'Last Trade (Real-time) With Time'),
    ('k2', 'Change Percent (Real-time)'),
-   ('k3', 'Last Trade Size'),
    ('k4', 'Change From 52-week High'),
    ('k5', 'Percent Change From 52-week High'),
    ('l', 'Last Trade (With Time)'),
@@ -82,7 +87,6 @@ fields = [
    ('s1', 'Shares Owned'),
    ('s7', 'Short Ratio'),
    ('t1', 'Last Trade Time'),
-   ('t6', 'Trade Links'),
    ('t7', 'Ticker Trend'),
    ('t8', '1 yr Target Price'),
    ('v', 'Volume'),
@@ -95,18 +99,37 @@ fields = [
    ('y', 'Dividend Yield'),
 ]
 
-securities = [ s for s in open("securities.csv").read().split() if s.strip()!="" ]
-url = "http://finance.yahoo.com/d/quotes.csv?f="\
+all_securities = list(set([ urllib.quote(s) for s in open("securities.csv").read().split() if s.strip()!="" ]))
+i = 0
+
+now = datetime.datetime.now()
+
+while len(all_securities)>0:
+    i += 1
+    securities,all_securities = all_securities[:200],all_securities[200:]
+
+    url = "http://finance.yahoo.com/d/quotes.csv?f="\
       + "".join(k for (k,v) in fields)\
       + "&s=" + "+".join(securities)
-outdir = datetime.datetime.now().strftime('securities_db/%Y/%m/%d/%H')
-if not os.path.exists(outdir):
-    os.makedirs(outdir)
+    outdir = now.strftime('securities_db/%Y/%m/%d/%H/%M')
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
-outfile = open(datetime.datetime.now().strftime('securities_db/%Y/%m/%d/%H/securities_%Y%m%d_%H%M%S.csv'),'w')
-for line in urllib.urlopen(url).read().split('\n'):
-    if line.strip()=="": continue
-    quote = dict(zip([k for (k,v) in fields], line.split(',')))
-    outfile.write( json.dumps(quote)+"\n" )
-outfile.close()
+    response = urllib.urlopen(url)
+    if response.getcode()!=200:
+        print "Error response: "+response.getcode()
+        print response.read()
+        print
+        break
+    outfile = open(now.strftime('securities_db/%Y/%m/%d/%H/%M/securities_%Y%m%d_%H%M%S.part'+str(i)+'.csv'),'w')
+    for line in urllib.urlopen(url).readlines():
+        if line.strip()=="": continue
+        quote = dict(zip([k for (k,v) in fields], line.split(',')))
+        if len(quote)!=len(fields):
+            print "|values|=%d != |keys|=%d !!!\n%s" % (len(quote),len(fields),line)
+            continue
+        if quote['e1'] != '"N/A"':
+            print "No such ticker symbol: %s" % [quote['s']]
+        outfile.write( json.dumps(quote)+"\n" )
+    outfile.close()
 
