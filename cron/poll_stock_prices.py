@@ -98,8 +98,8 @@ fields = [
    ('x', 'Stock Exchange'),
    ('y', 'Dividend Yield'),
 ]
-
-all_securities = list(set([ urllib.quote(s) for s in open("securities.csv").read().split() if s.strip()!="" ]))
+basedir = os.path.abspath(os.path.dirname(__file__))
+all_securities = list(set([ urllib.quote(s) for s in open(basedir+"/securities.csv").read().split() if s.strip()!="" ]))
 i = 0
 
 now = datetime.datetime.now()
@@ -111,11 +111,10 @@ while len(all_securities)>0:
     url = "http://finance.yahoo.com/d/quotes.csv?f="\
       + "".join(k for (k,v) in fields)\
       + "&s=" + "+".join(securities)
-    basedir = os.path.abspath(os.path.dirname(__file__))+"/securities_db"
-    outdir = now.strftime(basedir+'/%Y/%m/%d/%H/%M')
+    outdir = now.strftime(basedir+'/securities_db/%Y/%m/%d/%H/%M')
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    file(basedir+"/polling.log","w").write("%s Polled yahoo for stock prices.\n" % now)
+    file(basedir+"/securities_db/polling.log","w").write("%s Polled yahoo for stock prices.\n" % now)
 
     response = urllib.urlopen(url)
     if response.getcode()!=200:
@@ -123,7 +122,7 @@ while len(all_securities)>0:
         print response.read()
         print
         break
-    outfile = open(now.strftime(basedir+'/%Y/%m/%d/%H/%M/securities_%Y%m%d_%H%M%S.part'+str(i)+'.csv'),'w')
+    outfile = open(now.strftime(basedir+'/securities_db/%Y/%m/%d/%H/%M/securities_%Y%m%d_%H%M%S.part'+str(i)+'.csv'),'w')
     for line in urllib.urlopen(url).readlines():
         if line.strip()=="": continue
         quote = dict(zip([k for (k,v) in fields], line.split(',')))
