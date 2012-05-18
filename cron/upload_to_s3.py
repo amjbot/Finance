@@ -13,4 +13,3 @@ k = Key(b)
 for s in glob.glob(os.path.join(os.path.dirname(__file__),"securities_db/*/*/*/*/*/*")):
     k.key = '/'.join(s.split('/')[-7:])
     k.set_contents_from_filename(s)
-    os.remove(s)
