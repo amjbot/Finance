@@ -1,3 +1,0 @@
-# m h  dom mon dow   command
-*/5 * * * * /opt/Finance/cron/poll_stock_prices.py
-3 * * * * /opt/Finance/cron/upload_to_s3.py
