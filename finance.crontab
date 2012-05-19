@@ -1,3 +1,5 @@
 # m h  dom mon dow   command
 */5 * * * * /opt/Finance/metrics/poll_stock_prices.py
 3 * * * * /opt/Finance/metrics/upload_to_s3.py
+13 19 * * * /opt/Finance/metrics/download_from_s3.py
+23 19 * * * /opt/Finance/metrics/generate_daily_report.py
