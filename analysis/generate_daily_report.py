@@ -14,24 +14,35 @@ for file in glob.glob(os.path.join(os.path.dirname(__file__),"securities_db/*/*/
             if not (isinstance(record['s'],unicode) or isinstance(record['s'],str)) or\
                not record['s'].startswith('"'): 
                 continue
+            j1 = record['j1']
+            if j1.endswith('K'):
+                j1 = j1.split('.')[0] + '000'
+            elif j1.endswith('M'):
+                j1 = j1.split('.')[0] + '000000'
+            elif j1.endswith('B'):
+                j1 = j1.split('.')[0] + '000000000'
             daily_observations[record['s']] = daily_observations.get(record['s'],{})
-            daily_observations[record['s']][date] = { 'e':record['e'], 'r':record['r'] }
+            daily_observations[record['s']][date] = { 'e':record['e'], 'r':record['r'], 'j1':j1 }
         except json.decoder.JSONDecodeError:
             pass
 
 def average_stats( symbol, dates ):
-    d_sigma = {}
+    d_sigma = { 'e':0, 'r':0, 'j1':0 }
     d_count = 0
     for day in dates:
-        try:
-            d = daily_observations[symbol][day]
-            for key in d:
-                d_sigma[key] = d_sigma.get(key,0.0) + float(d[key])
+        d = daily_observations[symbol][day]
+        dd_sigma = {}
+        for key in d:
+            try:
+                dd_sigma[key] = float(d[key])
+            except ValueError:
+                dd_sigma['error'] = True
+        if 'error' not in dd_sigma:
+            for key in dd_sigma:
+                d_sigma[key] += dd_sigma[key]
             d_count += 1
-        except ValueError:
-            pass
-    if d_count == 0:
-        return { 'e':-1, 'r':-1 }
+    if d_count == 0 or d_sigma['e']==0 or d_sigma['r']==0:
+        return { 'e':-1, 'r':-1, 'j1':0 }
     for key in d_sigma:
         d_sigma[key] = d_sigma[key] / d_count
     return d_sigma
@@ -52,10 +63,14 @@ for symbol in daily_observations:
     performance = (current['e']/trailing_4['e']) *\
                (current['e']/trailing_52['e']) *\
                (current['e']/trailing_260['e'])
+    cap = current.get('j1',0)
+    bubble = current.get('r',0)
     daily_report.write(
-        "%.2f %s %.2f %s %s\n" %
+        "%.2f %s %.2f %s %.2f %s $%d %s %s\n" %
         (deviance, "undervalued" if deviance<1.0 else "overvalued",\
         performance, "shrinking" if performance<1.0 else "growing",\
+        bubble, "BUBBLICIOUS" if bubble>100 else "HYPED" if bubble>30 else "RATIONAL",\
+        cap, "LARGE" if cap>1000**3 else "MEDIUM" if cap>1000**2 else "SMALL",\
         symbol[1:-1]))
 
 subprocess.Popen("sort -n daily_report.txt > .daily_report.txt",shell=True).wait()
