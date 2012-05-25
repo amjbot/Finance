@@ -22,12 +22,12 @@ for file in glob.glob(os.path.join(os.path.dirname(__file__),"securities_db/*/*/
             elif j1.endswith('B'):
                 j1 = j1.split('.')[0] + '000000000'
             daily_observations[record['s']] = daily_observations.get(record['s'],{})
-            daily_observations[record['s']][date] = { 'e':record['e'], 'r':record['r'], 'j1':j1 }
+            daily_observations[record['s']][date] = { 'e':record['e'], 'r':record['r'], 'j1':j1, 'y':record['y'] }
         except json.decoder.JSONDecodeError:
             pass
 
 def average_stats( symbol, dates ):
-    d_sigma = { 'e':0, 'r':0, 'j1':0 }
+    d_sigma = { 'e':0, 'r':0, 'j1':0, 'y':0 }
     d_count = 0
     for day in dates:
         d = daily_observations[symbol][day]
@@ -36,13 +36,13 @@ def average_stats( symbol, dates ):
             try:
                 dd_sigma[key] = float(d[key])
             except ValueError:
-                dd_sigma['error'] = True
+                dd_sigma[key] = 0.0
         if 'error' not in dd_sigma:
             for key in dd_sigma:
                 d_sigma[key] += dd_sigma[key]
             d_count += 1
     if d_count == 0 or d_sigma['e']==0 or d_sigma['r']==0:
-        return { 'e':-1, 'r':-1, 'j1':0 }
+        return { 'e':-1, 'r':-1, 'j1':0, 'y':0 }
     for key in d_sigma:
         d_sigma[key] = d_sigma[key] / d_count
     return d_sigma
@@ -65,11 +65,13 @@ for symbol in daily_observations:
                (current['e']/trailing_260['e'])
     cap = current.get('j1',0)
     bubble = current.get('r',0)
+    dividend = current.get('y',0)
     daily_report.write(
-        "%.2f %s %.2f %s %.2f %s $%d %s %s\n" %
+        "%.2f %s %.2f %s %.2f %s %.2f %s $%d %s %s\n" %
         (deviance, "undervalued" if deviance<1.0 else "overvalued",\
+        dividend, "profitable" if dividend>0 else "speculative",\
         performance, "shrinking" if performance<1.0 else "growing",\
-        bubble, "BUBBLICIOUS" if bubble>100 else "HYPED" if bubble>30 else "RATIONAL",\
+        bubble, "BUBBLICIOUS" if bubble>100 else "HYPED" if bubble>30 else "RATIONAL" if bubble>10 else "NEGLECTED",\
         cap, "LARGE" if cap>1000**3 else "MEDIUM" if cap>1000**2 else "SMALL",\
         symbol[1:-1]))
 
