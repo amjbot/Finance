@@ -5,6 +5,12 @@ import glob
 import simplejson as json
 import subprocess
 
+blacklist = set()
+for line in open(os.path.join(os.path.dirname(__file__),"blacklist.txt")):
+    if line.strip()=="":
+        continue
+    blacklist.add(line.strip())
+
 daily_observations = {}
 for file in glob.glob(os.path.join(os.path.dirname(__file__),"securities_db/*/*/*/*/*/*.csv")):
     date = '/'.join(file.split('/')[-6:-3])
@@ -12,7 +18,7 @@ for file in glob.glob(os.path.join(os.path.dirname(__file__),"securities_db/*/*/
         try:
             record = json.loads(line)
             if not (isinstance(record['s'],unicode) or isinstance(record['s'],str)) or\
-               not record['s'].startswith('"'): 
+               not record['s'].startswith('"') or record['s'][1:-1] in blacklist: 
                 continue
             j1 = record['j1']
             if j1.endswith('K'):
